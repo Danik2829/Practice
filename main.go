@@ -4,13 +4,19 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"restAPI/config"
 	"restAPI/handlers"
 	"restAPI/service"
 	"restAPI/storage"
 )
 
 func main() {
-	store, err := storage.NewDbStorage()
+	conf, err := config.Load()
+	if err != nil {
+		return
+	}
+
+	store, err := storage.NewDbStorage(*conf)
 	if err != nil {
 		defer store.Close()
 		return
@@ -19,10 +25,7 @@ func main() {
 	handler := handlers.NewHandler(service)
 
 	mux := mux.NewRouter()
-	mux.HandleFunc("/users", handler.CreateUser).Methods("POST")
-	mux.HandleFunc("/users/{id}", handler.GetUser).Methods("GET")
-	mux.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PUT")
-	mux.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
+	handler.InitRoutes(mux)
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)

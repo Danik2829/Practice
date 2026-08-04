@@ -15,14 +15,14 @@ func NewUserService(store core.UserStore) *UserService {
 	}
 }
 
-func (s *UserService) CreateUser(user core.User) error {
+func (s *UserService) Create(user core.User) error {
 	log.Printf("CreateUser called for ID: %s, email: %s", user.ID, user.Email)
 	if user.ID == "" || user.FirstName == "" || user.LastName == "" || user.Email == "" || user.Age == 0 {
 		log.Printf("CreateUser validation failed: missing required fields for ID=%s", user.ID)
 		return core.InvalidData
 	}
-	_, exist := s.store.Get(user.ID)
-	if exist == nil {
+	u := s.store.Get(user.ID)
+	if u == nil {
 		log.Printf("CreateUser: user with ID %s already exists", user.ID)
 		return core.UserExist
 	}
@@ -35,39 +35,42 @@ func (s *UserService) CreateUser(user core.User) error {
 	return nil
 }
 
-func (s *UserService) GetUser(id string) (core.User, error) {
+func (s *UserService) Get(id string) *core.User {
 	log.Printf("GetUser called for ID: %s", id)
-	user, exist := s.store.Get(id)
-	if exist != nil {
+	user := s.store.Get(id)
+	if user == nil {
 		log.Printf("GetUser: user %s not found", id)
-		return core.User{}, core.NotFound
+		return nil
 	}
 	log.Printf("GetUser: user %s retrieved successfully", id)
-	return user, nil
+	return user
 }
 
-func (s *UserService) UpdateUser(user core.User) error {
+func (s *UserService) Update(user core.User) (core.User, error) {
 	log.Printf("UpdateUser called for ID: %s", user.ID)
+
 	if user.ID == "" || user.FirstName == "" || user.LastName == "" || user.Email == "" || user.Age == 0 {
 		log.Printf("UpdateUser validation failed: missing required fields for ID=%s", user.ID)
-		return core.InvalidData
+		return core.User{}, core.InvalidData
 	}
-	err := s.store.Update(user)
+
+	updatedUser, err := s.store.Update(user)
 	if err != nil {
 		log.Printf("UpdateUser: store.Update failed for ID %s: %v", user.ID, err)
-		return err
+		return core.User{}, err
 	}
+
 	log.Printf("UpdateUser: user %s updated successfully", user.ID)
-	return nil
+	return updatedUser, nil
 }
 
-func (s *UserService) DeleteUser(id string) error {
+func (s *UserService) Delete(id string) string {
 	log.Printf("DeleteUser called for ID: %s", id)
-	err := s.store.Delete(id)
-	if err != nil {
-		log.Printf("DeleteUser: store.Delete failed for ID %s: %v", id, err)
-		return err
+	deletedId := s.store.Delete(id)
+	if deletedId == "" {
+		log.Printf("DeleteUser: store.Delete failed for ID %s: %v", id)
+		return ""
 	}
 	log.Printf("DeleteUser: user %s deleted successfully", id)
-	return nil
+	return deletedId
 }

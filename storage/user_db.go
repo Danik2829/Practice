@@ -3,10 +3,9 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-	"os"
+	"restAPI/config"
 	"restAPI/core"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -14,16 +13,9 @@ type Store struct {
 	db *sql.DB
 }
 
-func NewDbStorage() (*Store, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, fmt.Errorf("No .env file found; falling back to system environment variables")
-	}
+func NewDbStorage(cfg config.Config) (*Store, error) {
 	connStr := fmt.Sprintf(`user=%s password=%s dbname=%s sslmode=%s`,
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_SSLMODE"))
+		cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.SSLMode)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open db: %w", err)
@@ -43,46 +35,46 @@ func (s *Store) Create(u core.User) error {
 	return err
 }
 
-func (s *Store) Get(id string) (core.User, error) {
+func (s *Store) Get(id string) *core.User {
 	var user core.User
 	err := s.db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age)
 	if err != nil {
-		return core.User{}, err
+		return nil
 	} else {
-		return user, nil
+		return &user
 	}
 }
 
-func (s *Store) Update(user core.User) error {
-	result, err := s.db.Exec(`UPDATE users SET 
-	firstName = $2,
-	lastName = $3, 
-	email = $4, 
-	age = $5 
-	WHERE id = $1`,
-		user.ID, user.FirstName, user.LastName, user.Email, user.Age)
+func (s *Store) Update(user core.User) (core.User, error) {
+	var updated core.User
+	err := s.db.QueryRow(`
+        UPDATE users 
+        SET first_name = $2, last_name = $3, email = $4, age = $5 
+        WHERE id = $1
+        RETURNING id, first_name, last_name, email, age
+    `, user.ID, user.FirstName, user.LastName, user.Email, user.Age).
+		Scan(&updated.ID, &updated.FirstName, &updated.LastName, &updated.Email, &updated.Age)
+
 	if err != nil {
-		return err
+		if err == sql.ErrNoRows {
+			return core.User{}, core.NotFound
+		}
+		return core.User{}, err
 	}
-	if count, err := result.RowsAffected(); err != nil {
-		return err
-	} else if count == 0 {
-		return core.NotFound
-	}
-	return nil
+	return updated, nil
 }
 
-func (s *Store) Delete(id string) error {
-	result, err := s.db.Exec("DELETE FROM users WHERE id = $1", id)
+func (s *Store) Delete(id string) string {
+	var deletedId string
+	err := s.db.QueryRow("DELETE FROM users WHERE id = $1 RETURNING id", id).Scan(&deletedId)
 	if err != nil {
-		return err
+		return ""
 	}
-	if count, err := result.RowsAffected(); err != nil {
-		return err
-	} else if count == 0 {
-		return core.NotFound
+	if deletedId == "" {
+		return ""
+	} else {
+		return deletedId
 	}
-	return nil
 }
 
 func (s *Store) Close() error {

@@ -10,13 +10,21 @@ import (
 )
 
 type Handler struct {
-	service core.UserServiceInterface
+	service core.UserService
 }
 
-func NewHandler(s core.UserServiceInterface) *Handler {
+func NewHandler(s core.UserService) *Handler {
 	return &Handler{
 		service: s,
 	}
+}
+
+func (h *Handler) InitRoutes(m *mux.Router) {
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users", h.CreateUser).Methods("POST")
+	mux.HandleFunc("/users/{id}", h.GetUser).Methods("GET")
+	mux.HandleFunc("/users/{id}", h.UpdateUser).Methods("PUT")
+	mux.HandleFunc("/users/{id}", h.DeleteUser).Methods("DELETE")
 }
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +33,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	err := h.service.CreateUser(user)
+	err := h.service.Create(user)
 	if err == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -46,7 +54,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
-	if user, err := h.service.GetUser(id["id"]); err == core.NotFound {
+	if user := h.service.Get(id["id"]); user == nil {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	} else {
@@ -59,35 +67,36 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	idURL := mux.Vars(r)
+	vars := mux.Vars(r)
+	id := vars["id"]
 	var user core.User
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err == nil {
-		user.ID = idURL["id"]
-		jsonErr := h.service.UpdateUser(user)
-		switch jsonErr {
-		case core.NotFound:
-			http.Error(w, "Not Found", http.StatusNotFound)
-			return
-		case core.InvalidData:
-			http.Error(w, "JSON parsed but values are wrong", http.StatusUnprocessableEntity)
-			return
-		default:
-			rawJson, _ := json.Marshal(user)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write(rawJson)
-			return
-		}
-	} else {
-		http.Error(w, "Invalid json", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	user.ID = id
+	updatedUser, err := h.service.Update(user)
+	switch {
+	case errors.Is(err, core.NotFound):
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	case errors.Is(err, core.InvalidData):
+		http.Error(w, "Invalid user data", http.StatusUnprocessableEntity)
+		return
+	case err != nil:
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	default:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(updatedUser)
 		return
 	}
 }
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idURL := mux.Vars(r)
-	if err := h.service.DeleteUser(idURL["id"]); err == core.NotFound {
+	if id := h.service.Delete(idURL["id"]); id == "" {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	} else {

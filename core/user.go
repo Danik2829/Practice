@@ -2,18 +2,18 @@ package core
 
 import "errors"
 
-type UserServiceInterface interface {
-	CreateUser(user User) error
-	GetUser(id string) (User, error)
-	UpdateUser(user User) error
-	DeleteUser(id string) error
+type UserService interface {
+	Create(user User) error
+	Get(id string) *User
+	Update(user User) (User, error)
+	Delete(id string) string
 }
 
 type UserStore interface {
 	Create(user User) error
-	Get(id string) (User, error)
-	Update(user User) error
-	Delete(id string) error
+	Get(id string) *User
+	Update(user User) (User, error)
+	Delete(id string) string
 }
 
 type User struct {
