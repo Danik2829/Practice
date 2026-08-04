@@ -68,7 +68,7 @@ func (s *UserService) Delete(id string) string {
 	log.Printf("DeleteUser called for ID: %s", id)
 	deletedId := s.store.Delete(id)
 	if deletedId == "" {
-		log.Printf("DeleteUser: store.Delete failed for ID %s: %v", id)
+		log.Printf("DeleteUser: store.Delete failed for ID %s", id)
 		return ""
 	}
 	log.Printf("DeleteUser: user %s deleted successfully", id)
