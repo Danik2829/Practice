@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
 	"restAPI/config"
 	"restAPI/handlers"
 	"restAPI/service"
 	"restAPI/storage"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -18,8 +19,8 @@ func main() {
 
 	store, err := storage.NewDbStorage(*conf)
 	if err != nil {
-		defer store.Close()
-		return
+		//defer store.Close()
+		//return
 	}
 	service := service.NewUserService(store)
 	handler := handlers.NewHandler(service)

@@ -19,8 +19,7 @@ func NewHandler(s core.UserService) *Handler {
 	}
 }
 
-func (h *Handler) InitRoutes(m *mux.Router) {
-	mux := mux.NewRouter()
+func (h *Handler) InitRoutes(mux *mux.Router) {
 	mux.HandleFunc("/users", h.CreateUser).Methods("POST")
 	mux.HandleFunc("/users/{id}", h.GetUser).Methods("GET")
 	mux.HandleFunc("/users/{id}", h.UpdateUser).Methods("PUT")

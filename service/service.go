@@ -10,9 +10,8 @@ type UserService struct {
 }
 
 func NewUserService(store core.UserStore) *UserService {
-	return &UserService{
-		store: store,
-	}
+	log.Printf("NewUserService: store = %v", store)
+	return &UserService{store: store}
 }
 
 func (s *UserService) Create(user core.User) error {
@@ -22,7 +21,7 @@ func (s *UserService) Create(user core.User) error {
 		return core.InvalidData
 	}
 	u := s.store.Get(user.ID)
-	if u == nil {
+	if u != nil {
 		log.Printf("CreateUser: user with ID %s already exists", user.ID)
 		return core.UserExist
 	}
