@@ -14,8 +14,15 @@ type Store struct {
 }
 
 func NewDbStorage(cfg config.Config) (*Store, error) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.SSLMode)
+	connStr := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBName,
+		cfg.SSLMode,
+	)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -25,19 +32,6 @@ func NewDbStorage(cfg config.Config) (*Store, error) {
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("failed to ping db: %w", err)
-	}
-
-	createTableSQL := `
-    CREATE TABLE IF NOT EXISTS users (
-        id VARCHAR(36) PRIMARY KEY,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        age INTEGER CHECK (age >= 0)
-    )`
-	if _, err := db.Exec(createTableSQL); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to create table: %w", err)
 	}
 
 	return &Store{db: db}, nil
