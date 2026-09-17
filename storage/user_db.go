@@ -33,7 +33,6 @@ func NewDbStorage(cfg config.Config) (*Store, error) {
 		db.Close()
 		return nil, fmt.Errorf("failed to ping db: %w", err)
 	}
-
 	return &Store{db: db}, nil
 }
 

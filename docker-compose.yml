@@ -1,5 +1,6 @@
 services:
   service:
+    build: .
     image: myapp
     container_name: api
     ports:
@@ -16,9 +17,9 @@ services:
     image: postgres:15-alpine
     container_name: psgr
     environment:
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:

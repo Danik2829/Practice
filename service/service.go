@@ -10,7 +10,7 @@ type UserService struct {
 }
 
 func NewUserService(store core.UserStore) *UserService {
-	log.Printf("NewUserService: store = %v", store)
+	log.Printf("SERVICE: type=%T, store=%p", store, store)
 	return &UserService{store: store}
 }
 

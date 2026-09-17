@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"restAPI/config"
 	"restAPI/handlers"
@@ -18,9 +19,11 @@ func main() {
 	}
 
 	store, err := storage.NewDbStorage(*conf)
+	log.Printf("MAIN: store=%p", store)
+
 	if err != nil {
-		//defer store.Close()
-		//return
+		log.Printf("MAIN: NewDbStorage error: %v", err)
+		return
 	}
 	service := service.NewUserService(store)
 	handler := handlers.NewHandler(service)
