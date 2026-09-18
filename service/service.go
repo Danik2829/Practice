@@ -11,6 +11,7 @@ type UserService struct {
 
 func NewUserService(store core.UserStore) *UserService {
 	log.Printf("SERVICE: type=%T, store=%p", store, store)
+
 	return &UserService{store: store}
 }
 
@@ -31,6 +32,7 @@ func (s *UserService) Create(user core.User) error {
 		return err
 	}
 	log.Printf("CreateUser: user %s created successfully", user.ID)
+
 	return nil
 }
 
@@ -39,9 +41,11 @@ func (s *UserService) Get(id string) *core.User {
 	user := s.store.Get(id)
 	if user == nil {
 		log.Printf("GetUser: user %s not found", id)
+
 		return nil
 	}
 	log.Printf("GetUser: user %s retrieved successfully", id)
+
 	return user
 }
 
@@ -50,16 +54,19 @@ func (s *UserService) Update(user core.User) (core.User, error) {
 
 	if user.ID == "" || user.FirstName == "" || user.LastName == "" || user.Email == "" || user.Age == 0 {
 		log.Printf("UpdateUser validation failed: missing required fields for ID=%s", user.ID)
+
 		return core.User{}, core.InvalidData
 	}
 
 	updatedUser, err := s.store.Update(user)
 	if err != nil {
 		log.Printf("UpdateUser: store.Update failed for ID %s: %v", user.ID, err)
+
 		return core.User{}, err
 	}
 
 	log.Printf("UpdateUser: user %s updated successfully", user.ID)
+
 	return updatedUser, nil
 }
 
@@ -68,8 +75,10 @@ func (s *UserService) Delete(id string) string {
 	deletedId := s.store.Delete(id)
 	if deletedId == "" {
 		log.Printf("DeleteUser: store.Delete failed for ID %s", id)
+
 		return ""
 	}
 	log.Printf("DeleteUser: user %s deleted successfully", id)
+
 	return deletedId
 }

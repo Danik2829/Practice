@@ -12,22 +12,25 @@ spec:
       labels:
         app: go-api
     spec:
+      initContainers:
+        - name: migration
+          image: users-migration:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-path=/migrations"
+            - "-database=postgres://postgres:21282908@postgres:5432/usersdb?sslmode=disable"
+            - "up"
+
       containers:
         - name: myapp
           image: myapp
           env:
-          - name: DB_HOST
+          - name: POSTGRES_USER
             value: postgres
-          - name: DB_PORT
-            value: "5432"
-          - name: DB_USER
-            value: postgres
-          - name: DB_PASSWORD
+          - name: POSTGRES_PASSWORD
             value: "21282908"
-          - name: DB_NAME
+          - name: POSTGRES_DB
             value: usersdb
-          - name: DB_SSLMODE
-            value: disable
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
