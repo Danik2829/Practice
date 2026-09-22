@@ -1,45 +1,84 @@
 package service
 
-import "restAPI/core"
+import (
+	"log"
+	"restAPI/core"
+)
 
 type UserService struct {
-	stor core.UserStorage
+	store core.UserStore
 }
 
-func NewUserService(stor core.UserStorage) *UserService {
-	return &UserService{
-		stor: stor,
-	}
+func NewUserService(store core.UserStore) *UserService {
+	log.Printf("SERVICE: type=%T, store=%p", store, store)
+
+	return &UserService{store: store}
 }
 
-func (s *UserService) CreateUser(user core.User) error {
+func (s *UserService) Create(user core.User) error {
+	log.Printf("CreateUser called for ID: %s, email: %s", user.ID, user.Email)
 	if user.ID == "" || user.FirstName == "" || user.LastName == "" || user.Email == "" || user.Age == 0 {
+		log.Printf("CreateUser validation failed: missing required fields for ID=%s", user.ID)
 		return core.InvalidData
 	}
-	if _, exist := s.stor.Get(user.ID); exist == nil {
+	u := s.store.Get(user.ID)
+	if u != nil {
+		log.Printf("CreateUser: user with ID %s already exists", user.ID)
 		return core.UserExist
 	}
-	if err := s.stor.Create(user); err != nil {
+	err := s.store.Create(user)
+	if err != nil {
+		log.Printf("CreateUser: store.Create failed for ID %s: %v", user.ID, err)
 		return err
 	}
+	log.Printf("CreateUser: user %s created successfully", user.ID)
+
 	return nil
 }
 
-func (s *UserService) GetUser(id string) (core.User, error) {
-	if user, exist := s.stor.Get(id); exist != nil {
-		return core.User{}, core.NotFound
-	} else {
-		return user, nil
+func (s *UserService) Get(id string) *core.User {
+	log.Printf("GetUser called for ID: %s", id)
+	user := s.store.Get(id)
+	if user == nil {
+		log.Printf("GetUser: user %s not found", id)
+
+		return nil
 	}
+	log.Printf("GetUser: user %s retrieved successfully", id)
+
+	return user
 }
 
-func (s *UserService) UpdateUser(user core.User) error {
+func (s *UserService) Update(user core.User) (core.User, error) {
+	log.Printf("UpdateUser called for ID: %s", user.ID)
+
 	if user.ID == "" || user.FirstName == "" || user.LastName == "" || user.Email == "" || user.Age == 0 {
-		return core.InvalidData
+		log.Printf("UpdateUser validation failed: missing required fields for ID=%s", user.ID)
+
+		return core.User{}, core.InvalidData
 	}
-	return s.stor.Update(user)
+
+	updatedUser, err := s.store.Update(user)
+	if err != nil {
+		log.Printf("UpdateUser: store.Update failed for ID %s: %v", user.ID, err)
+
+		return core.User{}, err
+	}
+
+	log.Printf("UpdateUser: user %s updated successfully", user.ID)
+
+	return updatedUser, nil
 }
 
-func (s *UserService) DeleteUser(id string) error {
-	return s.stor.Delete(id)
+func (s *UserService) Delete(id string) string {
+	log.Printf("DeleteUser called for ID: %s", id)
+	deletedId := s.store.Delete(id)
+	if deletedId == "" {
+		log.Printf("DeleteUser: store.Delete failed for ID %s", id)
+
+		return ""
+	}
+	log.Printf("DeleteUser: user %s deleted successfully", id)
+
+	return deletedId
 }

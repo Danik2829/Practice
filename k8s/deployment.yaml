@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:  
+  name: go-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-api
+  template:
+    metadata:
+      labels:
+        app: go-api
+    spec:
+      initContainers:
+        - name: migration
+          image: users-migration:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-path=/migrations"
+            - "-database=postgres://postgres:21282908@postgres:5432/usersdb?sslmode=disable"
+            - "up"
+
+      containers:
+        - name: myapp
+          image: myapp
+          env:
+          - name: POSTGRES_USER
+            value: postgres
+          - name: POSTGRES_PASSWORD
+            value: "21282908"
+          - name: POSTGRES_DB
+            value: usersdb
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
